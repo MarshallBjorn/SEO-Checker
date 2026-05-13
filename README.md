@@ -171,6 +171,5 @@ PR nie zostanie zmergowany jeśli CI jest czerwony.
 
 ---
 
-**Przedmiot:** `<NAZWA PRZEDMIOTU>`
-**Prowadzący:** `<PROWADZĄCY>`
+**Przedmiot:** `Oleksij Navrotskyi`
 **Rok akademicki:** 2025/2026
