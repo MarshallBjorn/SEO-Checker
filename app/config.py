@@ -18,6 +18,11 @@ class Settings(BaseSettings):
     celery_broker_url: str
     celery_result_backend: str
 
+    # sesje server-side
+    session_redis_url: str = "redis://redis:6379/2"
+    session_ttl_seconds: int = 604800  # 7 dni
+    session_cookie_name: str = "session_id"
+
     playwright_timeout_ms: int = 30000
 
     @property
@@ -33,6 +38,10 @@ class Settings(BaseSettings):
             f"postgresql://{self.db_user}:{self.db_password}"
             f"@{self.db_host}:{self.db_port}/{self.db_name}"
         )
+
+    @property
+    def cookie_secure(self) -> bool:
+        return self.app_env == "prod"
 
 
 settings = Settings()

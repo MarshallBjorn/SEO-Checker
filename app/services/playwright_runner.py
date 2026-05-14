@@ -6,9 +6,7 @@ async def scrape_basic(url: str, timeout_ms: int = 30000) -> dict:
         browser = await p.chromium.launch(headless=True)
         try:
             page = await browser.new_page()
-            response = await page.goto(
-                url, timeout=timeout_ms, wait_until="domcontentloaded"
-            )
+            response = await page.goto(url, timeout=timeout_ms, wait_until="domcontentloaded")
             title = await page.title()
             return {
                 "page_title": title,
