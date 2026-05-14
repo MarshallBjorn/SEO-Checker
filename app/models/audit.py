@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import JSON, DateTime, String
 from sqlalchemy import Enum as SAEnum
@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.db import Base
 
 
-class AuditStatus(str, Enum):
+class AuditStatus(StrEnum):
     PENDING = "pending"
     RUNNING = "running"
     DONE = "done"
@@ -20,9 +20,7 @@ class AuditStatus(str, Enum):
 class Audit(Base):
     __tablename__ = "audits"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     url: Mapped[str] = mapped_column(String(2048), nullable=False)
     status: Mapped[AuditStatus] = mapped_column(
         SAEnum(AuditStatus, name="audit_status"),

@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -11,12 +12,11 @@ from app.tasks.audit import run_audit
 
 router = APIRouter()
 
+SessionDep = Annotated[AsyncSession, Depends(get_session)]
+
 
 @router.post("", response_model=AuditResponse, status_code=status.HTTP_201_CREATED)
-async def create_audit(
-    payload: AuditCreate,
-    db: AsyncSession = Depends(get_session),
-) -> Audit:
+async def create_audit(payload: AuditCreate, db: SessionDep) -> Audit:
     audit = Audit(url=str(payload.url), status=AuditStatus.PENDING)
     db.add(audit)
     await db.commit()
@@ -27,10 +27,7 @@ async def create_audit(
 
 
 @router.get("/{audit_id}", response_model=AuditResponse)
-async def get_audit(
-    audit_id: UUID,
-    db: AsyncSession = Depends(get_session),
-) -> Audit:
+async def get_audit(audit_id: UUID, db: SessionDep) -> Audit:
     result = await db.execute(select(Audit).where(Audit.id == audit_id))
     audit = result.scalar_one_or_none()
     if audit is None:

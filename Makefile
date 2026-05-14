@@ -1,29 +1,31 @@
 .PHONY: dev down logs shell test lint format migrate migration
 
+COMPOSE = docker compose --env-file .env -f compose/docker-compose.dev.yml
+
 dev:
-	docker compose -f compose/docker-compose.dev.yml up -d --build
+	$(COMPOSE) up -d --build
 
 down:
-	docker compose -f compose/docker-compose.dev.yml down
+	$(COMPOSE) down
 
 logs:
-	docker compose -f compose/docker-compose.dev.yml logs -f
+	$(COMPOSE) logs -f
 
 shell:
-	docker compose -f compose/docker-compose.dev.yml exec app bash
+	$(COMPOSE) exec app bash
 
 test:
-	docker compose -f compose/docker-compose.dev.yml exec app pytest
+	$(COMPOSE) exec app pytest
 
 lint:
-	docker compose -f compose/docker-compose.dev.yml exec app ruff check app/ tests/
+	$(COMPOSE) exec app ruff check app/ tests/
 
 format:
-	docker compose -f compose/docker-compose.dev.yml exec app ruff format app/ tests/
+	$(COMPOSE) exec app ruff format app/ tests/
 
 migrate:
-	docker compose -f compose/docker-compose.dev.yml exec app alembic upgrade head
+	$(COMPOSE) exec app alembic upgrade head
 
 migration:
 	@read -p "Migration name: " name; \
-	docker compose -f compose/docker-compose.dev.yml exec app alembic revision --autogenerate -m "$$name"
+	$(COMPOSE) exec app alembic revision --autogenerate -m "$$name"
