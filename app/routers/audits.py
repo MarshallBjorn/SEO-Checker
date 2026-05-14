@@ -1,12 +1,15 @@
+import asyncio
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import require_user
 from app.db import get_session
+from app.middleware.rate_limit import limiter
+from app.middleware.ssrf import is_safe_url
 from app.models.audit import Audit, AuditStatus
 from app.models.user import User, UserRole
 from app.schemas.audit import AuditCreate, AuditListItem, AuditResponse
@@ -29,14 +32,22 @@ async def _get_owned_audit(audit_id: UUID, db: AsyncSession, user: User) -> Audi
 
 
 @router.post("", response_model=AuditResponse, status_code=status.HTTP_201_CREATED)
-async def create_audit(payload: AuditCreate, db: SessionDep, user: UserDep) -> Audit:
+@limiter.limit("10/minute")
+async def create_audit(
+    request: Request, payload: AuditCreate, db: SessionDep, user: UserDep
+) -> Audit:
+    if not await asyncio.to_thread(is_safe_url, str(payload.url)):
+        raise HTTPException(
+            status_code=400,
+            detail="URL niedozwolony — adres prywatny/lokalny lub nieobsługiwany schemat",
+        )
+
     audit = Audit(
         url=str(payload.url),
         user_id=user.id,
         status=AuditStatus.PENDING,
         settings=payload.settings.model_dump(),
     )
-
     db.add(audit)
     await db.commit()
     await db.refresh(audit)

@@ -9,6 +9,7 @@ from app.auth.passwords import hash_password, verify_password
 from app.auth.sessions import create_session, delete_session
 from app.config import settings
 from app.db import get_session
+from app.middleware.rate_limit import limiter
 from app.models.user import User, UserRole
 from app.schemas.user import UserResponse
 
@@ -29,6 +30,7 @@ def _set_session_cookie(response: Response, session_id: str) -> None:
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("3/minute")
 async def register(
     request: Request,
     response: Response,
@@ -57,6 +59,7 @@ async def register(
 
 
 @router.post("/login", response_model=UserResponse)
+@limiter.limit("5/minute")
 async def login(
     request: Request,
     response: Response,

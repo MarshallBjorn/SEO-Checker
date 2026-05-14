@@ -20,6 +20,9 @@ test:
 lint:
 	$(COMPOSE) exec app ruff check app/ tests/
 
+lint-fix:
+	$(COMPOSE) exec app ruff check --fix app/ tests/
+
 format:
 	$(COMPOSE) exec app ruff format app/ tests/
 
