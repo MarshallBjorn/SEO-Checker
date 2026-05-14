@@ -5,19 +5,38 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.dependencies import require_user
 from app.db import get_session
 from app.models.audit import Audit, AuditStatus
-from app.schemas.audit import AuditCreate, AuditResponse
+from app.models.user import User, UserRole
+from app.schemas.audit import AuditCreate, AuditListItem, AuditResponse
 from app.tasks.audit import run_audit
 
 router = APIRouter()
 
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
+UserDep = Annotated[User, Depends(require_user)]
+
+
+async def _get_owned_audit(audit_id: UUID, db: AsyncSession, user: User) -> Audit:
+    result = await db.execute(select(Audit).where(Audit.id == audit_id))
+    audit = result.scalar_one_or_none()
+    if audit is None:
+        raise HTTPException(status_code=404, detail="Audit not found")
+    if audit.user_id != user.id and user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Brak dostępu do tego audytu")
+    return audit
 
 
 @router.post("", response_model=AuditResponse, status_code=status.HTTP_201_CREATED)
-async def create_audit(payload: AuditCreate, db: SessionDep) -> Audit:
-    audit = Audit(url=str(payload.url), status=AuditStatus.PENDING)
+async def create_audit(payload: AuditCreate, db: SessionDep, user: UserDep) -> Audit:
+    audit = Audit(
+        url=str(payload.url),
+        user_id=user.id,
+        status=AuditStatus.PENDING,
+        settings=payload.settings.model_dump(),
+    )
+
     db.add(audit)
     await db.commit()
     await db.refresh(audit)
@@ -26,10 +45,14 @@ async def create_audit(payload: AuditCreate, db: SessionDep) -> Audit:
     return audit
 
 
+@router.get("", response_model=list[AuditListItem])
+async def list_audits(db: SessionDep, user: UserDep) -> list[Audit]:
+    result = await db.execute(
+        select(Audit).where(Audit.user_id == user.id).order_by(Audit.created_at.desc())
+    )
+    return list(result.scalars().all())
+
+
 @router.get("/{audit_id}", response_model=AuditResponse)
-async def get_audit(audit_id: UUID, db: SessionDep) -> Audit:
-    result = await db.execute(select(Audit).where(Audit.id == audit_id))
-    audit = result.scalar_one_or_none()
-    if audit is None:
-        raise HTTPException(status_code=404, detail="Audit not found")
-    return audit
+async def get_audit(audit_id: UUID, db: SessionDep, user: UserDep) -> Audit:
+    return await _get_owned_audit(audit_id, db, user)

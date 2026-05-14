@@ -3,9 +3,9 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
+from app import models  # noqa: F401  - register all models
 from app.config import settings
 from app.db import Base
-from app.models.audit import Audit  # noqa: F401  - register models
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.alembic_database_url)
