@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Nowy audyt{% endblock %}
+{% block content %}
+<div class="bg-white p-6 rounded shadow max-w-2xl mx-auto"
+     x-data="{ timeoutMs: 30000,
+               weights: {meta:20,headings:10,images:15,links:10,performance:25,technicals:10,accessibility:10} }">
+  <h1 class="text-xl font-bold mb-4">Nowy audyt SEO</h1>
+  <form hx-post="/ui/audit" hx-target="#result" hx-swap="innerHTML">
+    <label class="block mb-4"><span class="text-sm font-medium">URL strony</span>
+      <input type="url" name="url" required placeholder="https://example.com"
+             class="w-full border rounded px-2 py-1">
+    </label>
+
+    <fieldset class="mb-4 border rounded p-3">
+      <legend class="text-sm font-medium px-1">User Agent</legend>
+      <label class="mr-4"><input type="radio" name="user_agent" value="googlebot"> Googlebot</label>
+      <label class="mr-4"><input type="radio" name="user_agent" value="chrome_desktop" checked> Chrome Desktop</label>
+      <label><input type="radio" name="user_agent" value="mobile_safari"> Mobile Safari</label>
+    </fieldset>
+
+    <label class="block mb-4">
+      <span class="text-sm font-medium">Timeout: <span x-text="timeoutMs"></span> ms</span>
+      <input type="range" name="timeout_ms" min="5000" max="60000" step="1000" x-model.number="timeoutMs">
+    </label>
+
+    <div class="mb-4 border rounded p-3">
+      <p class="text-sm font-medium mb-2">Wagi kategorii</p>
+      <template x-for="cat in Object.keys(weights)" :key="cat">
+        <label class="block mb-1 text-sm">
+          <span x-text="cat"></span>: <span x-text="weights[cat]"></span>
+          <input type="range" :name="'weight_' + cat" min="0" max="100" x-model.number="weights[cat]">
+        </label>
+      </template>
+    </div>
+
+    <div class="mb-4 border rounded p-3">
+      <p class="text-sm font-medium mb-2">Aktywne kategorie</p>
+      {% for c in ['meta','headings','images','links','performance','technicals','accessibility'] %}
+        <label class="inline-block mr-3 text-sm">
+          <input type="checkbox" name="enable_{{ c }}" checked> {{ c }}
+        </label>
+      {% endfor %}
+    </div>
+
+    <label class="block mb-4 text-sm">
+      <input type="checkbox" name="viewport_mobile"> Mobile viewport
+    </label>
+
+    <button class="bg-blue-600 text-white px-4 py-2 rounded">Uruchom audyt</button>
+  </form>
+  <div id="result" class="mt-6"></div>
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Wynik audytu{% endblock %}
+{% block content %}
+<div class="bg-white p-6 rounded shadow max-w-3xl mx-auto">
+  <h1 class="text-xl font-bold mb-1">Wynik audytu</h1>
+  <p class="text-sm text-gray-500 mb-4 break-all">{{ audit.url }}</p>
+  {% include "partials/audit_status.html" %}
+  {% if audit.status.value == 'done' %}
+  <div class="mt-6">
+    <h2 class="font-bold mb-2">Problemy</h2>
+    {% for cat, data in (audit.result.get('categories') or {}).items() %}
+      <div class="mb-3">
+        <h3 class="font-medium">{{ cat }} ({{ data.get('score') }}/100)</h3>
+        <ul class="text-sm ml-4 list-disc">
+          {% for issue in data.get('issues', []) %}
+            <li class="{% if issue.severity == 'error' %}text-red-600{% elif issue.severity == 'warn' %}text-yellow-600{% else %}text-gray-500{% endif %}">
+              [{{ issue.severity }}] {{ issue.message }}
+            </li>
+          {% else %}
+            <li class="text-green-600">Brak problemów</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

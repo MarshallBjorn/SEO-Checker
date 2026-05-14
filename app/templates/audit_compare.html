@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Porównanie{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Porównanie audytów</h1>
+<div class="grid grid-cols-2 gap-4">
+  {% for audit in [audit_a, audit_b] %}
+  <div class="bg-white p-4 rounded shadow">
+    <p class="text-sm text-gray-500 break-all mb-1">{{ audit.url }}</p>
+    <p class="text-xs text-gray-400 mb-2">{{ audit.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+    {% set r = audit.result or {} %}
+    <p class="text-2xl font-bold">{{ r.get('score', '-') }}/100</p>
+    <div class="mt-2 text-sm">
+      {% for cat, score in (r.get('category_scores') or {}).items() %}
+        <div class="flex justify-between border-b py-1"><span>{{ cat }}</span><span>{{ score }}</span></div>
+      {% endfor %}
+    </div>
+    {% if audit.status.value == 'done' %}
+      <img src="/audits/{{ audit.id }}/chart.png?type=radar" alt="radar" class="mt-3 w-full">
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

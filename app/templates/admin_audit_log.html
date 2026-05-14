@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Admin — audit log{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Audit log</h1>
+<div class="bg-white p-4 rounded shadow overflow-x-auto">
+  <table class="w-full text-sm">
+    <thead><tr class="text-left border-b">
+      <th class="py-1">Czas</th><th>Akcja</th><th>User</th><th>IP</th><th>Wynik</th><th>Zasób</th>
+    </tr></thead>
+    <tbody>
+      {% for log in logs %}
+      <tr class="border-b">
+        <td class="py-1">{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+        <td>{{ log.action }}</td>
+        <td class="text-xs">{{ log.user_id or '-' }}</td>
+        <td>{{ log.ip_address or '-' }}</td>
+        <td class="{% if log.success %}text-green-600{% else %}text-red-600{% endif %}">{{ 'OK' if log.success else 'FAIL' }}</td>
+        <td>{{ log.resource_type or '' }} {{ log.resource_id or '' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

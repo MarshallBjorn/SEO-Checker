@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SEO Auditor{% endblock %}</title>
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script src="https://unpkg.com/alpinejs@3.14.8/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-gray-50 text-gray-800" hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}'>
+  <nav class="bg-white shadow mb-6">
+    <div class="container mx-auto px-4 py-3 flex items-center gap-4">
+      <a href="/dashboard" class="font-bold text-blue-600">SEO Auditor</a>
+      {% if user %}
+        <a href="/audit/new" class="hover:underline">Nowy audyt</a>
+        <a href="/history" class="hover:underline">Historia</a>
+        {% if user.role.value == 'admin' %}
+          <a href="/admin" class="hover:underline text-purple-600">Admin</a>
+        {% endif %}
+        <span class="ml-auto text-sm text-gray-500">{{ user.email }}</span>
+        <button hx-post="/auth/logout" class="text-sm text-red-600 hover:underline">Wyloguj</button>
+      {% else %}
+        <a href="/login" class="ml-auto hover:underline">Logowanie</a>
+        <a href="/register" class="hover:underline">Rejestracja</a>
+      {% endif %}
+    </div>
+  </nav>
+  <main class="container mx-auto px-4 pb-12">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

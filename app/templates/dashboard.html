@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Witaj, {{ user.email }}</h1>
+<div class="flex gap-3 mb-6">
+  <a href="/audit/new" class="bg-blue-600 text-white px-4 py-2 rounded">Nowy audyt</a>
+  <a href="/history" class="bg-gray-200 px-4 py-2 rounded">Historia audytów</a>
+</div>
+<div class="bg-white p-4 rounded shadow">
+  <h2 class="font-bold mb-2">Ostatnie audyty</h2>
+  <table class="w-full text-sm">
+    <thead><tr class="text-left border-b"><th class="py-1">URL</th><th>Status</th><th>Data</th><th></th></tr></thead>
+    <tbody>
+      {% for audit in audits %}{% include "partials/audit_row.html" %}{% else %}
+      <tr><td colspan="4" class="py-2 text-gray-500">Brak audytów</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

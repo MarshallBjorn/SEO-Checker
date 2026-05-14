@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Admin — użytkownicy{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">Użytkownicy</h1>
+<div class="bg-white p-4 rounded shadow">
+  <table class="w-full text-sm">
+    <thead><tr class="text-left border-b"><th class="py-1">Email</th><th>Rola</th><th>Aktywny</th><th>Utworzony</th></tr></thead>
+    <tbody>
+      {% for u in users %}
+      <tr class="border-b">
+        <td class="py-1">{{ u.email }}</td>
+        <td>{{ u.role.value }}</td>
+        <td>{{ 'tak' if u.is_active else 'nie' }}</td>
+        <td>{{ u.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,6 @@
+<tr class="border-b">
+  <td class="py-1 break-all">{{ audit.url }}</td>
+  <td>{{ audit.status.value }}</td>
+  <td>{{ audit.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+  <td><a href="/audit/{{ audit.id }}" class="text-blue-600">Zobacz</a></td>
+</tr>

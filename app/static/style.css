@@ -1,0 +1,3 @@
+/* minimalne uzupełnienie Tailwind CDN */
+[x-cloak] { display: none !important; }
+input[type="range"] { width: 100%; }

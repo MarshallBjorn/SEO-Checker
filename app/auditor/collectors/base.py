@@ -45,7 +45,7 @@ class CategoryResult:
 
 
 @dataclass
-class PageContent:
+class PageContext:
     url: str
     final_url: str
     status_code: int | None
