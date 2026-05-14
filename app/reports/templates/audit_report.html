@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: 'Liberation Sans', sans-serif; color: #1f2937; font-size: 11px; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  h2 { font-size: 14px; border-bottom: 1px solid #ccc; margin-top: 18px; }
+  h3 { font-size: 12px; margin-bottom: 2px; }
+  .muted { color: #6b7280; }
+  .score { font-size: 32px; font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  th, td { border: 1px solid #d1d5db; padding: 4px 6px; text-align: left; }
+  th { background: #f3f4f6; }
+  .issue-error { color: #dc2626; }
+  .issue-warn { color: #d97706; }
+  .issue-info { color: #6b7280; }
+  img.chart { max-width: 100%; }
+  img.shot { max-width: 48%; border: 1px solid #d1d5db; margin-right: 1%; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+  <h1>Raport audytu SEO</h1>
+  <p class="muted">{{ audit.url }}</p>
+  <p class="muted">Wygenerowano: {{ audit.updated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+  <p class="score">{{ result.get('score', '-') }}/100</p>
+
+  {% if radar_uri %}<h2>Score per kategoria</h2><img class="chart" src="{{ radar_uri }}">{% endif %}
+
+  <h2>Kategorie</h2>
+  <table>
+    <thead><tr><th>Kategoria</th><th>Score</th><th>Liczba problemów</th></tr></thead>
+    <tbody>
+      {% for cat, data in categories.items() %}
+      <tr><td>{{ cat }}</td><td>{{ data.get('score') }}</td><td>{{ data.get('issues') | length }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if bar_uri %}<img class="chart" src="{{ bar_uri }}">{% endif %}
+
+  <div class="page-break"></div>
+  <h2>Szczegóły problemów</h2>
+  {% for cat, data in categories.items() %}
+    <h3>{{ cat }} ({{ data.get('score') }}/100)</h3>
+    <ul>
+      {% for issue in data.get('issues', []) %}
+        <li class="issue-{{ issue.severity }}">[{{ issue.severity }}] {{ issue.message }}</li>
+      {% else %}
+        <li>Brak problemów</li>
+      {% endfor %}
+    </ul>
+  {% endfor %}
+
+  {% if desktop_shot or mobile_shot %}
+  <div class="page-break"></div>
+  <h2>Zrzuty ekranu</h2>
+  {% if desktop_shot %}<img class="shot" src="{{ desktop_shot }}">{% endif %}
+  {% if mobile_shot %}<img class="shot" src="{{ mobile_shot }}">{% endif %}
+  {% endif %}
+</body>
+</html>
