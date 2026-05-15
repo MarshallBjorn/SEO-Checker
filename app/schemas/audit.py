@@ -44,6 +44,7 @@ class AuditResponse(BaseModel):
     id: UUID
     url: str
     status: AuditStatus
+    settings: dict | None = None
     result: dict | None = None
     error: str | None = None
     created_at: datetime

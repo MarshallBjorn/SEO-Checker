@@ -3,7 +3,7 @@ from app.auditor.collectors.base import CategoryResult, Issue, PageContext, scor
 
 async def collect(ctx: PageContext) -> CategoryResult:
     soup = ctx.soup
-    issues = list[Issue] = []
+    issues: list[Issue] = []
     raw: dict = {}
 
     title = soup.title.string.strip() if soup.title and soup.title.string else None

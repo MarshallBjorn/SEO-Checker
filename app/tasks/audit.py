@@ -28,10 +28,17 @@ async def _run_audit_async(audit_id: str) -> None:
         await session.commit()
 
         try:
-            scrape_result = await run_full_audit(audit.url, AuditSettings(**audit.settings))
+            scrape_result = await run_full_audit(
+                audit.url,
+                AuditSettings(**audit.settings if isinstance(audit.settings, dict) else {}),
+            )  # noqa: E501
             audit.result = scrape_result
             audit.status = AuditStatus.DONE
         except Exception as e:  # noqa: BLE001
+            import traceback
+
+            tb = traceback.format_exc()
+            print(f"[run_audit] EXCEPTION:\n{tb}", flush=True)
             audit.error = str(e)
             audit.status = AuditStatus.FAILED
 

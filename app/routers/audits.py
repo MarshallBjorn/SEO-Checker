@@ -1,5 +1,7 @@
 import asyncio
+import re
 from typing import Annotated
+from urllib.parse import urlparse
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
@@ -80,8 +82,17 @@ async def get_audit_pdf(audit_id: UUID, db: SessionDep, user: UserDep) -> Respon
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="audit-{audit.id}.pdf"'},
+        headers={"Content-Disposition": f'attachment; filename="{_audit_filename(audit.url)}"'},
     )
+
+
+def _audit_filename(url: str) -> str:
+    host = urlparse(url).hostname or "audit"
+    if host.startswith("www."):
+        host = host[4:]
+    name = host.rsplit(".", 1)[0]  # ucina TLD (.com, .pl, ...)
+    name = re.sub(r"[^a-zA-Z0-9._-]", "_", name) or "audit"
+    return f"audit-{name}.pdf"
 
 
 @router.get("/{audit_id}/chart.png")
