@@ -8,7 +8,7 @@
 
 ## Spis treści
 
-- [SEO Auditor](#seo-auditor)
+- [SEO Checker](#seo-checker)
   - [Spis treści](#spis-treści)
   - [O projekcie](#o-projekcie)
   - [MVP](#mvp)
@@ -31,6 +31,8 @@ SEO Auditor to aplikacja webowa do automatycznego audytu SEO stron internetowych
 Aplikacja jest skonteneryzowana (Docker Compose) — może działać lokalnie jako jeden compose lub jako wdrożenie wielomaszynowe (osobne compose'y per rola: app, db, backup).
 
 Audyty trwają 20–60s (renderowanie strony w Chromium), więc uruchamiane są asynchronicznie przez Celery. Frontend (HTMX) pollluje status w tle.
+
+> 📖 **Korzystasz z aplikacji?** Pełna instrukcja użytkownika: [`docs/INSTRUCTION.md`](docs/INSTRUCTION.md)
 
 ## MVP
 
@@ -73,34 +75,31 @@ Audyty trwają 20–60s (renderowanie strony w Chromium), więc uruchamiane są 
 
 ```
 seo-auditor/
-├── app/                    # FastAPI
+├── app/
 │   ├── main.py
 │   ├── config.py
 │   ├── db.py
-│   ├── models/             # SQLAlchemy
-│   ├── schemas/            # Pydantic
-│   ├── routers/            # auth, audits, reports, admin
-│   ├── services/           # auditor, playwright_runner, pdf, charts, backup
-│   ├── middleware/         # audit log
-│   ├── tasks/              # Celery tasks
-│   ├── templates/          # Jinja2 + HTMX
-│   └── static/
-├── alembic/                # Migracje
-├── tests/                  # pytest
-├── nginx/
-│   └── nginx.conf
-├── docker/
-│   ├── Dockerfile.app
-│   └── Dockerfile.worker   # z Playwright
-├── compose/
-│   ├── docker-compose.dev.yml
-│   ├── docker-compose.app.yml
-│   ├── docker-compose.db.yml
-│   └── docker-compose.backup.yml
-├── scripts/
-│   ├── backup.sh
-│   ├── restore.sh
-│   └── create_admin.py
+│   ├── templating.py
+│   ├── models/             # SQLAlchemy: audit, user, audit_log
+│   ├── schemas/            # Pydantic: AuditSettings, AuditResponse, UserResponse...
+│   ├── routers/            # auth, audits, admin, frontend
+│   ├── auditor/            # silnik audytu
+│   │   ├── runner.py
+│   │   ├── scoring.py
+│   │   └── collectors/     # meta, headings, images, links, performance, technicals, accessibility
+│   ├── auth/               # passwords (argon2), sessions (Redis), csrf, dependencies
+│   ├── reports/            # pdf (WeasyPrint), charts (matplotlib), templates/audit_report.html
+│   ├── middleware/         # audit_log, csrf, ssrf, rate_limit
+│   ├── tasks/              # Celery: run_audit
+│   ├── templates/          # Jinja2 + HTMX (base, login, dashboard, audit_form, audit_result, admin_*)
+│   │   └── partials/       # audit_row, audit_status (HTMX fragments)
+│   └── static/style.css
+├── alembic/versions/       # migracje (initial, users, audit_user_fk_and_settings, audit_log)
+├── tests/                  # test_auth, test_audit_full, test_ssrf, test_health
+├── docs/
+│   └── INSTRUCTION.md      # instrukcja użytkownika
+├── docker/{Dockerfile.app, Dockerfile.worker}
+├── compose/docker-compose.dev.yml
 ├── .env.example
 ├── pyproject.toml
 └── README.md
@@ -122,9 +121,13 @@ pre-commit install
 detect-secrets scan > .secrets.baseline
 
 # 3. Uruchom
+# 3. Uruchom
 make dev
 make migrate
-make createsuperuser
+
+# 4. Zarejestruj pierwsze konto przez UI lub curl, potem nadaj rolę admin:
+docker compose --env-file .env -f compose/docker-compose.dev.yml exec postgres \
+  psql -U seoauditor -d seoauditor -c "UPDATE users SET role='admin' WHERE email='twoj@email';"
 ```
 
 ### Codzienna praca
@@ -153,17 +156,18 @@ PR nie zostanie zmergowany jeśli CI jest czerwony.
 
 | Moduł | Status |
 |---|---|
-| Szkielet FastAPI | 🟡 W trakcie |
-| Auditor — core | ⬜ Zaplanowane |
-| Auditor — Playwright runner | ⬜ Zaplanowane |
-| Reports — PDF | ⬜ Zaplanowane |
-| Reports — wykresy | ⬜ Zaplanowane |
-| Accounts | ⬜ Zaplanowane |
-| Audit Log | ⬜ Zaplanowane |
-| Frontend (HTMX) | ⬜ Zaplanowane |
-| Celery + tasks | ⬜ Zaplanowane |
-| Backup (restic) | ⬜ Zaplanowane |
-| CI | ⬜ Zaplanowane |
+| Szkielet FastAPI + Postgres + Celery | ✅ Gotowe |
+| Auditor — 7 kolektorów (meta, headings, images, links, performance, technicals, a11y) | ✅ Gotowe |
+| Playwright runner + Web Vitals + screenshoty | ✅ Gotowe |
+| Reports — PDF (WeasyPrint) + wykresy radar/bar (matplotlib) | ✅ Gotowe |
+| Konta + sesje Redis + role user/admin (argon2) | ✅ Gotowe |
+| Audit Log middleware | ✅ Gotowe |
+| Frontend HTMX (suwaki, przełączniki, radio) | ✅ Gotowe |
+| Panel admina (users, audit log, stats) | ✅ Gotowe |
+| Bezpieczeństwo: CSRF, rate limit, SSRF | ✅ Gotowe |
+| Smoke testy (auth, audit, SSRF) | ✅ Gotowe |
+| CI (GitHub Actions) | 🟡 W trakcie |
+| Backup (restic) + deployment OpenStack | ⬜ Wieczór 4 |
 
 ## Autorzy
 
