@@ -21,7 +21,8 @@ write_files:
       {"mtu": 1280}
 
 runcmd:
-  - [ sh, -c, "netplan apply && systemctl restart docker" ]
+  - [ sh, -c, "ip link set ens3 mtu 1280" ]
+  - [ sh, -c, "systemctl restart docker" ]
   - [ sh, -c, "until getent hosts github.com >/dev/null; do echo 'wait dns'; sleep 3; done" ]
   - [ sh, -c, "for i in 1 2 3 4 5; do git clone https://github.com/MarshallBjorn/SEO-Checker /opt/seo-auditor && break || sleep 5; done" ]
   - [ sh, -c, "mv /tmp/seoauditor.env /opt/seo-auditor/.env && chmod 600 /opt/seo-auditor/.env" ]
