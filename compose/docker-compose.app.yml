@@ -11,9 +11,8 @@ services:
     restart: unless-stopped
 
   migrate:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.app
+    image: ghcr.io/marshallbjorn/seo-checker-app:latest
+    pull_policy: always
     env_file: ../.env
     environment:
       DB_HOST: ${DB_INSTANCE_IP}
@@ -27,9 +26,8 @@ services:
     restart: "no"
 
   app:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.app
+    image: ghcr.io/marshallbjorn/seo-checker-app:latest
+    pull_policy: always
     env_file: ../.env
     environment:
       DB_HOST: ${DB_INSTANCE_IP}
@@ -55,9 +53,8 @@ services:
     restart: unless-stopped
 
   worker:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.worker
+    image: ghcr.io/marshallbjorn/seo-checker-worker:latest
+    pull_policy: always
     env_file: ../.env
     environment:
       DB_HOST: ${DB_INSTANCE_IP}
@@ -82,9 +79,8 @@ services:
     restart: unless-stopped
 
   cron:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.cron
+    image: ghcr.io/marshallbjorn/seo-checker-cron:latest
+    pull_policy: always
     env_file: ../.env
     environment:
       DB_HOST: ${DB_INSTANCE_IP}
