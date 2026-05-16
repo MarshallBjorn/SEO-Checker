@@ -57,7 +57,7 @@ echo "db-navrotskyi IP: $DB_IP"
 # --- backup ---
 sed "s|__INSERT_RESTIC_PASSWORD__|$RESTIC_PASSWORD|g" \
     cloud-init/backup.yaml > /tmp/backup-userdata.yaml
-create_server backup-navrotskyi m1.tiny sg-backup-navrotskyi /tmp/backup-userdata.yaml
+create_server backup-navrotskyi m1.small sg-backup-navrotskyi /tmp/backup-userdata.yaml
 BACKUP_IP=$(server_ip backup-navrotskyi)
 echo "backup-navrotskyi IP: $BACKUP_IP"
 
