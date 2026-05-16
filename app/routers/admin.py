@@ -39,8 +39,9 @@ async def admin_dashboard(
     audits_count = await db.scalar(select(func.count(Audit.id)))
     logs_count = await db.scalar(select(func.count(AuditLog.id)))
     return templates.TemplateResponse(
-        "admin_dashboard.html",
-        _ctx(
+        request=request,
+        name="admin_dashboard.html",
+        context=_ctx(
             request,
             user,
             session_data,
@@ -60,7 +61,9 @@ async def admin_users(
     result = await db.execute(select(User).order_by(User.created_at.desc()))
     users = list(result.scalars().all())
     return templates.TemplateResponse(
-        "admin_users.html", _ctx(request, user, session_data, users=users)
+        request=request,
+        name="admin_users.html",
+        context=_ctx(request, user, session_data, users=users),
     )
 
 
@@ -73,7 +76,9 @@ async def admin_audit_log(
     result = await db.execute(select(AuditLog).order_by(AuditLog.created_at.desc()).limit(200))
     logs = list(result.scalars().all())
     return templates.TemplateResponse(
-        "admin_audit_log.html", _ctx(request, user, session_data, logs=logs)
+        request=request,
+        name="admin_audit_log.html",
+        context=_ctx(request, user, session_data, logs=logs),
     )
 
 
@@ -85,8 +90,9 @@ async def admin_backups(request: Request, user: CurrentUserDep, session_data: Se
 
     snapshots = await list_snapshots()
     return templates.TemplateResponse(
-        "admin_backups.html",
-        _ctx(request, user, session_data, snapshots=snapshots),
+        request=request,
+        name="admin_backups.html",
+        context=_ctx(request, user, session_data, snapshots=snapshots),
     )
 
 

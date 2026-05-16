@@ -40,7 +40,10 @@ write_files:
   - path: /etc/docker/daemon.json
     permissions: '0644'
     content: |
-      {"mtu": 1280}
+      {
+        "mtu": 1280,
+        "dns": ["8.8.8.8", "1.1.1.1"]
+      }
 
 runcmd:
   - [ sh, -c, "ip link set ens3 mtu 1280" ]
