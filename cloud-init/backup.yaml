@@ -3,14 +3,28 @@ hostname: backup-navrotskyi
 manage_etc_hosts: localhost
 
 write_files:
-  - path: /opt/seo-auditor/.env
+  - path: /tmp/seoauditor.env
     permissions: '0600'
     content: |
       RESTIC_PASSWORD=__INSERT_RESTIC_PASSWORD__
+  - path: /etc/netplan/99-mtu-fix.yaml
+    permissions: '0600'
+    content: |
+      network:
+        version: 2
+        ethernets:
+          ens3:
+            mtu: 1280
+  - path: /etc/docker/daemon.json
+    permissions: '0644'
+    content: |
+      {"mtu": 1280}
 
 runcmd:
+  - [ sh, -c, "netplan apply && systemctl restart docker" ]
   - [ sh, -c, "until getent hosts github.com >/dev/null; do echo 'wait dns'; sleep 3; done" ]
   - [ sh, -c, "for i in 1 2 3 4 5; do git clone https://github.com/MarshallBjorn/SEO-Checker /opt/seo-auditor && break || sleep 5; done" ]
+  - [ sh, -c, "mv /tmp/seoauditor.env /opt/seo-auditor/.env && chmod 600 /opt/seo-auditor/.env" ]
   - [ sh, -c, "cd /opt/seo-auditor && docker compose --env-file .env -f compose/docker-compose.backup.yml up -d" ]
 
 final_message: "backup-navrotskyi up after $UPTIME seconds"

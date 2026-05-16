@@ -3,7 +3,7 @@ hostname: app-navrotskyi
 manage_etc_hosts: localhost
 
 write_files:
-  - path: /opt/seo-auditor/.env
+  - path: /tmp/seoauditor.env
     permissions: '0600'
     content: |
       APP_ENV=prod
@@ -29,10 +29,24 @@ write_files:
 
       BACKUP_INSTANCE_IP=__BACKUP_INSTANCE_IP__
       DB_INSTANCE_IP=__DB_INSTANCE_IP__
+  - path: /etc/netplan/99-mtu-fix.yaml
+    permissions: '0600'
+    content: |
+      network:
+        version: 2
+        ethernets:
+          ens3:
+            mtu: 1280
+  - path: /etc/docker/daemon.json
+    permissions: '0644'
+    content: |
+      {"mtu": 1280}
 
 runcmd:
+  - [ sh, -c, "netplan apply && systemctl restart docker" ]
   - [ sh, -c, "until getent hosts github.com >/dev/null; do echo 'wait dns'; sleep 3; done" ]
   - [ sh, -c, "for i in 1 2 3 4 5; do git clone https://github.com/MarshallBjorn/SEO-Checker /opt/seo-auditor && break || sleep 5; done" ]
+  - [ sh, -c, "mv /tmp/seoauditor.env /opt/seo-auditor/.env && chmod 600 /opt/seo-auditor/.env" ]
   - [ sh, -c, "for i in $(seq 1 60); do (echo > /dev/tcp/__DB_INSTANCE_IP__/5432) >/dev/null 2>&1 && break; echo 'wait db'; sleep 3; done" ]
   - [ sh, -c, "for i in $(seq 1 60); do (echo > /dev/tcp/__BACKUP_INSTANCE_IP__/8000) >/dev/null 2>&1 && break; echo 'wait backup'; sleep 3; done" ]
   - [ sh, -c, "cd /opt/seo-auditor && docker compose --env-file .env -f compose/docker-compose.app.yml up -d" ]
