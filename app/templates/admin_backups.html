@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Admin — backups{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-4">
+  <h1 class="text-2xl font-bold">Backupy</h1>
+  <form hx-post="/admin/backups/trigger" hx-headers='{"X-CSRF-Token": "{{ csrf_token }}"}' hx-swap="none">
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+      Wymuś backup teraz
+    </button>
+  </form>
+</div>
+
+<div class="bg-white p-4 rounded shadow overflow-x-auto">
+  {% if snapshots %}
+  <table class="w-full text-sm">
+    <thead><tr class="text-left border-b">
+      <th class="py-1">Time</th><th>ID</th><th>Host</th><th>Tags</th><th>Paths</th>
+    </tr></thead>
+    <tbody>
+      {% for s in snapshots %}
+      <tr class="border-b">
+        <td class="py-1">{{ s.time[:19].replace('T', ' ') }}</td>
+        <td class="font-mono text-xs">{{ s.short_id or s.id[:8] }}</td>
+        <td>{{ s.hostname or '-' }}</td>
+        <td>{{ (s.tags or []) | join(', ') }}</td>
+        <td class="text-xs">{{ (s.paths or []) | join(', ') }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="text-gray-500">Brak snapshotów (lub restic niedostępny).</p>
+  {% endif %}
+</div>
+{% endblock %}

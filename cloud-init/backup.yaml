@@ -1,0 +1,16 @@
+#cloud-config
+hostname: backup-navrotskyi
+manage_etc_hosts: localhost
+
+write_files:
+  - path: /opt/seo-auditor/.env
+    permissions: '0600'
+    content: |
+      RESTIC_PASSWORD=__INSERT_RESTIC_PASSWORD__
+
+runcmd:
+  - [ sh, -c, "until getent hosts github.com >/dev/null; do echo 'wait dns'; sleep 3; done" ]
+  - [ sh, -c, "for i in 1 2 3 4 5; do git clone https://github.com/MarshallBjorn/SEO-Checker /opt/seo-auditor && break || sleep 5; done" ]
+  - [ sh, -c, "cd /opt/seo-auditor && docker compose --env-file .env -f compose/docker-compose.backup.yml up -d" ]
+
+final_message: "backup-navrotskyi up after $UPTIME seconds"

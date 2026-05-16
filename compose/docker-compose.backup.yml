@@ -1,0 +1,13 @@
+name: seo-checker-backup
+services:
+  restic-rest:
+    image: restic/rest-server:latest
+    environment:
+      OPTIONS: "--no-auth"
+    ports: ["8000:8000"]
+    volumes:
+      - restic_data:/data
+    restart: unless-stopped
+
+volumes:
+  restic_data:

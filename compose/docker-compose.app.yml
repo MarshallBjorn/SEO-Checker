@@ -1,0 +1,93 @@
+name: seo-checker-app
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    ports: ["80:80"]
+    volumes:
+      - ../nginx/app.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    restart: unless-stopped
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app
+    env_file: ../.env
+    environment:
+      DB_HOST: ${DB_INSTANCE_IP}
+    command: >
+      sh -c "
+        until pg_isready -h $$DB_HOST -U $$DB_USER -d $$DB_NAME -t 2; do
+          echo 'waiting for postgres...'; sleep 2;
+        done;
+        alembic upgrade head
+      "
+    restart: "no"
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app
+    env_file: ../.env
+    environment:
+      DB_HOST: ${DB_INSTANCE_IP}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      SESSION_REDIS_URL: redis://redis:6379/2
+      RESTIC_REPOSITORY: rest:http://${BACKUP_INSTANCE_IP}:8000/
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD}
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    expose: ["8000"]
+    depends_on:
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    env_file: ../.env
+    environment:
+      DB_HOST: ${DB_INSTANCE_IP}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    depends_on:
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    expose: ["6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  cron:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.cron
+    env_file: ../.env
+    environment:
+      DB_HOST: ${DB_INSTANCE_IP}
+      RESTIC_REPOSITORY: rest:http://${BACKUP_INSTANCE_IP}:8000/
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD}
+    restart: unless-stopped

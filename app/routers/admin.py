@@ -75,3 +75,26 @@ async def admin_audit_log(
     return templates.TemplateResponse(
         "admin_audit_log.html", _ctx(request, user, session_data, logs=logs)
     )
+
+
+@router.get("/backups", response_class=HTMLResponse)
+async def admin_backups(request: Request, user: CurrentUserDep, session_data: SessionDataDep):
+    if (redirect := _guard(user)) is not None:
+        return redirect
+    from app.services.backup import list_snapshots
+
+    snapshots = await list_snapshots()
+    return templates.TemplateResponse(
+        "admin_backups.html",
+        _ctx(request, user, session_data, snapshots=snapshots),
+    )
+
+
+@router.post("/backups/trigger")
+async def admin_trigger_backup(user: CurrentUserDep, session_data: SessionDataDep):
+    if (redirect := _guard(user)) is not None:
+        return redirect
+    from app.tasks.backup import run_backup
+
+    run_backup.delay()
+    return {"status": "triggered"}

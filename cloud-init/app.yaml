@@ -1,0 +1,40 @@
+#cloud-config
+hostname: app-navrotskyi
+manage_etc_hosts: localhost
+
+write_files:
+  - path: /opt/seo-auditor/.env
+    permissions: '0600'
+    content: |
+      APP_ENV=prod
+      SECRET_KEY=__INSERT_SECRET__
+      LOG_LEVEL=INFO
+
+      DB_USER=seoauditor
+      DB_PASSWORD=__INSERT_DB_PASSWORD__
+      DB_NAME=seoauditor
+      DB_HOST=__DB_INSTANCE_IP__
+      DB_PORT=5432
+
+      REDIS_URL=redis://redis:6379/0
+      CELERY_BROKER_URL=redis://redis:6379/0
+      CELERY_RESULT_BACKEND=redis://redis:6379/1
+      SESSION_REDIS_URL=redis://redis:6379/2
+      SESSION_TTL_SECONDS=604800
+
+      PLAYWRIGHT_TIMEOUT_MS=30000
+
+      RESTIC_PASSWORD=__INSERT_RESTIC_PASSWORD__
+      RESTIC_REPOSITORY=rest:http://__BACKUP_INSTANCE_IP__:8000/
+
+      BACKUP_INSTANCE_IP=__BACKUP_INSTANCE_IP__
+      DB_INSTANCE_IP=__DB_INSTANCE_IP__
+
+runcmd:
+  - [ sh, -c, "until getent hosts github.com >/dev/null; do echo 'wait dns'; sleep 3; done" ]
+  - [ sh, -c, "for i in 1 2 3 4 5; do git clone https://github.com/MarshallBjorn/SEO-Checker /opt/seo-auditor && break || sleep 5; done" ]
+  - [ sh, -c, "for i in $(seq 1 60); do (echo > /dev/tcp/__DB_INSTANCE_IP__/5432) >/dev/null 2>&1 && break; echo 'wait db'; sleep 3; done" ]
+  - [ sh, -c, "for i in $(seq 1 60); do (echo > /dev/tcp/__BACKUP_INSTANCE_IP__/8000) >/dev/null 2>&1 && break; echo 'wait backup'; sleep 3; done" ]
+  - [ sh, -c, "cd /opt/seo-auditor && docker compose --env-file .env -f compose/docker-compose.app.yml up -d" ]
+
+final_message: "app-navrotskyi up after $UPTIME seconds"
