@@ -2,10 +2,16 @@ FROM mcr.microsoft.com/playwright/python:v1.59.0-noble
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        restic postgresql-client gzip \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml ./
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -e .
 
 COPY app/ ./app/
+COPY scripts/backup.sh /scripts/backup.sh
+RUN chmod +x /scripts/backup.sh
 
 CMD ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info"]
