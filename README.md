@@ -19,6 +19,8 @@
     - [Pierwszy setup po klonowaniu repo](#pierwszy-setup-po-klonowaniu-repo)
     - [Codzienna praca](#codzienna-praca)
     - [CI](#ci)
+  - [Deployment](#deployment)
+  - [Backupy](#backupy)
   - [Status projektu](#status-projektu)
   - [Autorzy](#autorzy)
 
@@ -70,6 +72,8 @@ Audyty trwają 20–60s (renderowanie strony w Chromium), więc uruchamiane są 
 - **Reverse proxy:** nginx
 - **Backupy:** restic + cron
 - **Konteneryzacja:** Docker + Docker Compose
+- **CI/CD:** GitHub Actions + GHCR (publiczne obrazy)
+- **OpenStack:** DevStack (Ubuntu 22.04 base), Glance, Nova, Neutron OVN
 
 ## Struktura repozytorium
 
@@ -90,16 +94,38 @@ seo-auditor/
 │   ├── auth/               # passwords (argon2), sessions (Redis), csrf, dependencies
 │   ├── reports/            # pdf (WeasyPrint), charts (matplotlib), templates/audit_report.html
 │   ├── middleware/         # audit_log, csrf, ssrf, rate_limit
-│   ├── tasks/              # Celery: run_audit
-│   ├── templates/          # Jinja2 + HTMX (base, login, dashboard, audit_form, audit_result, admin_*)
-│   │   └── partials/       # audit_row, audit_status (HTMX fragments)
+│   ├── tasks/              # Celery: run_audit, run_backup
+│   ├── services/           # backup.py (restic snapshots wrapper)
+│   ├── templates/          # Jinja2 + HTMX
+│   │   └── partials/
 │   └── static/style.css
-├── alembic/versions/       # migracje (initial, users, audit_user_fk_and_settings, audit_log)
+├── alembic/versions/       # migracje
 ├── tests/                  # test_auth, test_audit_full, test_ssrf, test_health
 ├── docs/
-│   └── INSTRUCTION.md      # instrukcja użytkownika
-├── docker/{Dockerfile.app, Dockerfile.worker}
-├── compose/docker-compose.dev.yml
+│   ├── INSTRUCTION.md      # instrukcja użytkownika
+│   ├── DEPLOYMENT.md       # procedura wdrożenia na OpenStack
+│   └── BACKUP.md           # backup/restore procedure
+├── docker/
+│   ├── Dockerfile.app
+│   ├── Dockerfile.worker   # + Playwright + restic + backup.sh
+│   └── Dockerfile.cron     # alpine + cron + restic
+├── compose/
+│   ├── docker-compose.dev.yml      # lokalny dev
+│   ├── docker-compose.app.yml      # produkcja: nginx + app + worker + redis + cron
+│   ├── docker-compose.db.yml       # produkcja: postgres
+│   └── docker-compose.backup.yml   # produkcja: restic-rest
+├── nginx/app.conf          # reverse proxy do app:8000
+├── cloud-init/             # user-data dla 3 instancji
+│   ├── app.yaml
+│   ├── db.yaml
+│   └── backup.yaml
+├── scripts/
+│   ├── deploy.sh           # orkiestracja stawiania instancji w OpenStacku
+│   ├── backup.sh           # pg_dump + restic push
+│   └── restore.sh          # restic restore do osobnej DB
+├── .github/workflows/
+│   ├── ci.yml              # lint + tests + docker build
+│   └── build-images.yml    # build & push do GHCR (app/worker/cron)
 ├── .env.example
 ├── pyproject.toml
 └── README.md
@@ -152,6 +178,33 @@ Każdy push i PR przechodzi przez GitHub Actions:
 
 PR nie zostanie zmergowany jeśli CI jest czerwony.
 
+## Deployment
+
+Pełna procedura wdrożenia na OpenStack (DevStack): [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+
+Skrót:
+```bash
+# Na DevStack VMce
+source /opt/stack/devstack/openrc admin admin
+bash scripts/deploy.sh
+
+# Po 5-10 min cloud-init kończy
+APP_FIP=$(openstack server show app-navrotskyi -f json | jq -r '.addresses | to_entries[].value[]' | grep -vE '^192\.168\.')
+curl http://$APP_FIP/health
+```
+
+Aplikacja używa **CI/CD przez GitHub Actions**: push do `main` → build obrazów Docker w runnerze GitHuba → push do GHCR → instancja `docker compose pull` ściąga gotowe obrazy.
+
+## Backupy
+
+Pełna dokumentacja: [`docs/BACKUP.md`](docs/BACKUP.md)
+
+- Cron 03:00 codziennie na `app-navrotskyi`
+- `pg_dump` → restic snapshot na `backup-navrotskyi`
+- Retencja 7d/4w/3m
+- UI w `/admin/backups` — lista + przycisk manual trigger
+- `restore.sh` restoruje do osobnej bazy `_restore` (bez nadpisywania prod)
+
 ## Status projektu
 
 | Moduł | Status |
@@ -166,8 +219,10 @@ PR nie zostanie zmergowany jeśli CI jest czerwony.
 | Panel admina (users, audit log, stats) | ✅ Gotowe |
 | Bezpieczeństwo: CSRF, rate limit, SSRF | ✅ Gotowe |
 | Smoke testy (auth, audit, SSRF) | ✅ Gotowe |
-| CI (GitHub Actions) | 🟡 W trakcie |
-| Backup (restic) + deployment OpenStack | ⬜ Wieczór 4 |
+| CI (GitHub Actions) + GHCR pipeline | ✅ Gotowe |
+| Backup (restic) + restore z weryfikacją | ✅ Gotowe |
+| Deployment OpenStack (3 instancje, cloud-init) | ✅ Gotowe |
+| Dokumentacja (DEPLOYMENT, BACKUP, INSTRUCTION) | ✅ Gotowe |
 
 ## Autorzy
 
